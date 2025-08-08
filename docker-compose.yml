@@ -1,0 +1,35 @@
+services:
+  webapi:
+    container_name: webapi
+    build:
+      context: .
+      dockerfile: webapi/Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 80:80
+
+  db:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fullsearch
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    
+volumes:
+  pgdata:
+    driver: local
