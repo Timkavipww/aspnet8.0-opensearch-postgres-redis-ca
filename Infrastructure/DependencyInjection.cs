@@ -1,6 +1,11 @@
+using Domain.Constants.Indicies;
+using Domain.Entities;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using OpenSearch.Client;
+using OpenSearch.Net;
 
 namespace Infrastructure;
 
@@ -24,6 +29,22 @@ public static class DependencyInjection
 
     public static IServiceCollection AddOpenSearch(this IServiceCollection services)
     {
+        var connectionPool = new SingleNodeConnectionPool(new Uri("http://opensearch:9200"));
+
+        var settings = new ConnectionSettings(connectionPool)
+            .DefaultIndex(OpenSearchIndicies.BOOK_INDEX)
+            .PrettyJson()
+            .EnableHttpCompression()
+            .DisableDirectStreaming()
+            .DefaultFieldNameInferrer(f => f.ToLower())
+            .DefaultMappingFor<Book>(m => m.IndexName(OpenSearchIndicies.BOOK_INDEX)) 
+            .DefaultMappingFor<Author>(m => m.IndexName(OpenSearchIndicies.AUTHOR_INDEX)) 
+            .BasicAuthentication("admin", "SuperSecurePassword123");
+
+        var client = new OpenSearchClient(settings);
+
+        services.AddSingleton<IOpenSearchClient>(client);
+
         return services;
     }
     

@@ -138,6 +138,14 @@
             "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
               "version": "[8.0.8, )"
+            },
+            "OpenSearch.Client": {
+              "target": "Package",
+              "version": "[1.8.0, )"
+            },
+            "OpenSearch.Net": {
+              "target": "Package",
+              "version": "[1.8.0, )"
             }
           },
           "imports": [
