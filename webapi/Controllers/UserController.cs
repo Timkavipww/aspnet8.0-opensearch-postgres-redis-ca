@@ -2,6 +2,7 @@ using Domain.Entities;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using webapi.Contracts;
 
 namespace webapi.Controllers;
 
@@ -20,5 +21,18 @@ public class UserController : ControllerBase
         var users = await _context.Users.ToListAsync();
 
         return users == null ? NotFound("No users found.") : Ok(users);
+    }
+    [HttpPost("/")]
+    public async Task<ActionResult> AddUser(CreateUserDTO user, CancellationToken cts)
+    {
+        var newuser = new User
+        {
+            Email = user.Email,
+            Name = user.Name
+        };
+
+        await _context.AddAsync(newuser, cts);
+        await _context.SaveChangesAsync();
+        return Ok();
     }
 }

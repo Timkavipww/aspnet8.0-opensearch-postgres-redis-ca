@@ -20,27 +20,5 @@ public class ApplicationDbContext : DbContext
             .WithMany(b => b.Authors)
             .UsingEntity(j => j.ToTable("AuthorBooks"));
 
-
-        modelBuilder.Entity<User>()
-            .HasData(new User
-            {
-                Id = 1,
-                Name = "Admin",
-                Email = "123"
-            },
-            new User
-            {
-                Id = 2,
-                Name = "User",
-                Email = "asd"
-            },
-            new User
-            {
-                Id = 3,
-                Name = "User",
-                Email = "qwe"
-            }
-            );
-               
     }
 }

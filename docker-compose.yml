@@ -10,6 +10,16 @@ services:
       db:
         condition: service_healthy
     ports:
+      - 3000:3000
+  
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
       - 80:80
 
   db:
