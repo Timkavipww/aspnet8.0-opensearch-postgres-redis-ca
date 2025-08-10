@@ -89,4 +89,43 @@ public class AuthorController : ControllerBase
 
         return CreatedAtAction(nameof(GetAuthors), new { id = author.Id }, result);
     }
+    [HttpPost("bulk")]
+    public async Task<ActionResult<IEnumerable<AuthorDTO>>> CreateAuthorsBulk(
+    [FromBody] List<CreateAuthorDTO> dtos,
+    CancellationToken cancellationToken)
+    {
+        if (dtos == null || !dtos.Any())
+            return BadRequest("Empty author list.");
+
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var authors = new List<Author>();
+
+        foreach (var dto in dtos)
+        {
+            var author = new Author
+            {
+                Id = Guid.NewGuid(),
+                Name = dto.Name,
+                Tags = dto.Tags?.ToList() ?? new List<string>()
+            };
+
+            authors.Add(author);
+        }
+
+        await _context.Authors.AddRangeAsync(authors, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var results = authors.Select(author => new AuthorDTO
+        {
+            Id = author.Id,
+            Name = author.Name,
+            Tags = author.Tags.ToList()
+        });
+
+        return Created("", results);
+    }
+
+
 }

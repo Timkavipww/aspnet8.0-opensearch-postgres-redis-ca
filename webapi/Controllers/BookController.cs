@@ -109,4 +109,54 @@ public class BookController : ControllerBase
 
         return CreatedAtAction(nameof(GetBooks), new { id = book.Id }, result);
     }
+    [HttpPost("bulk")]
+    public async Task<ActionResult<IEnumerable<BookDTO>>> CreateBooksBulk(
+    [FromBody] List<CreateBookDTO> dtos,
+    CancellationToken cancellationToken)
+    {
+        if (dtos == null || !dtos.Any())
+            return BadRequest("Empty book list.");
+
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var books = new List<Book>();
+
+        foreach (var dto in dtos)
+        {
+            var book = new Book
+            {
+                Id = Guid.NewGuid(),
+                Title = dto.Title,
+                Description = dto.Description,
+                Tags = dto.Tags?.ToList() ?? new List<string>()
+            };
+
+            if (dto.AuthorIds != null && dto.AuthorIds.Any())
+            {
+                book.BookAuthors = dto.AuthorIds.Select(authorId => new BookAuthor
+                {
+                    BookId = book.Id,
+                    AuthorId = authorId
+                }).ToList();
+            }
+
+            books.Add(book);
+        }
+
+        await _context.Books.AddRangeAsync(books, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var results = books.Select(book => new BookDTO
+        {
+            Id = book.Id,
+            Title = book.Title,
+            Description = book.Description,
+            Tags = book.Tags.ToList()
+        });
+
+        return Created("", results);
+    }
+
+
 }

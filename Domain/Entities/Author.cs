@@ -5,6 +5,6 @@ public class Author
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;
 
-    public ICollection<BookAuthor> BookAuthors { get; set; } = new List<BookAuthor>();
-    public ICollection<string> Tags { get; set; } = new List<string>();
+    public List<BookAuthor> BookAuthors { get; set; } = new List<BookAuthor>();
+    public List<string> Tags { get; set; } = new List<string>();
 }

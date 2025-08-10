@@ -86,7 +86,7 @@ public class IndexingService
                 Name = ba.Author.Name
             }).ToList(),
             Description = item.Description,
-            Tags = item.Tags,
+            Tags = item.Tags.ToList(),
             Title = item.Title
         });
 
@@ -102,7 +102,7 @@ public class IndexingService
                 Title = ba.Book.Title
             }).ToList(),
             Name = item.Name,
-            Tags = item.Tags.ToList(),
+            Tags = item.Tags.ToList()
         });
 
     }
