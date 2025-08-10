@@ -1,7 +1,9 @@
 using Domain.Entities;
+using Domain.Entities.OpensearchModels;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OpenSearch.Client;
 using webapi.Contracts;
 
 namespace webapi.Controllers;
@@ -12,8 +14,14 @@ public class BookController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
 
-    public BookController(ApplicationDbContext context)
+    private readonly IOpenSearchClient _opensearch;
+
+    public BookController
+    (
+        ApplicationDbContext context,
+        IOpenSearchClient opensearch)
     {
+        _opensearch = opensearch;
         _context = context;
     }
 
@@ -157,6 +165,59 @@ public class BookController : ControllerBase
 
         return Created("", results);
     }
+    [HttpGet("search")]
+    public async Task<ActionResult<IEnumerable<BookDTO>>> SearchBooks(
+        [FromQuery] string term,
+        CancellationToken cancellationToken)
+    {
+
+        var response = await _opensearch.SearchAsync<BookSearchModel>(s => s
+            .Index("books_items") // индекс, в котором ищем
+            .Source(src => src.Includes(i => i
+                .Fields(f => f.Title, f => f.Tags, f => f.Description)
+            ))
+            .Query(q => q
+                .Bool(b => b
+                    .Should(
+                        sh => sh.Wildcard(w => w
+                            .Field(f => f.Title)
+                            .Value($"*{term.ToLower()}*")
+                            .Boost(3)
+                        ),
+                        sh => sh.Wildcard(w => w
+                            .Field(f => f.Tags)
+                            .Value($"*{term.ToLower()}*")
+                            .Boost(2)
+                        ),
+                        sh => sh.Wildcard(w => w
+                            .Field(f => f.Description)
+                            .Value($"*{term.ToLower()}*")
+                        )
+                    )
+                )
+            ),
+            cancellationToken
+        );
+
+        if (!response.IsValid)
+        {
+            throw new Exception($"Ошибка поиска: {response.OriginalException.Message}", response.OriginalException);
+        }
+
+        var books = response.Documents.Select(doc => new BookDTO
+        {
+            Id = doc.Id,
+            Title = doc.Title,
+            Description = doc.Description,
+            Tags = doc.Tags?.ToList() ?? new List<string>()
+        });
+
+
+        return Ok(books);
+
+    }
+    
+
 
 
 }

@@ -6,6 +6,12 @@ type SearchResult = {
   description: string;
   email: string;
   name: string;
+  tags: Tag[];
+};
+
+type Tag = {
+  id: string;
+  name: string;
 };
 
 export const SearchApp: React.FC = () => {
@@ -20,8 +26,8 @@ export const SearchApp: React.FC = () => {
     setError(null);
 
     try {
-    //   const response = await fetch(`http://localhost:3000/search?q=${encodeURIComponent(query)}`);
-      const response = await fetch(`http://localhost:3000/`);
+      const response = await fetch(`http://localhost:3000/books/search?term=${encodeURIComponent(query)}`);
+      // const response = await fetch(`http://localhost:3000/`);
       
       if (!response.ok) {
         throw new Error(`Ошибка сервера: ${response.statusText}`);
@@ -89,8 +95,9 @@ export const SearchApp: React.FC = () => {
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             }}
           >
-            <h3 style={{ margin: "0 0 8px 0" }}>{item.name}</h3>
-            <p style={{ margin: 0 }}>{item.email}</p>
+            <h3 style={{ margin: "0 0 8px 0" }}>{item.title}</h3>
+            <p style={{ margin: 0 }}>{item.description}</p>
+            {item.tags.map((tag => (<p key={tag.id}>{tag.name}</p>)))}
           </div>
         ))}
       </div>
