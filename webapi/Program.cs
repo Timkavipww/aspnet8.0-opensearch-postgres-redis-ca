@@ -1,4 +1,5 @@
 using Infrastructure;
+using Infrastructure.Opensearch;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 
 builder.Services.AddLogging();
+builder.Services.AddScoped<IndexingService>();
 
 builder.Services
     .AddPersistence()

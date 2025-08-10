@@ -5,12 +5,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-
 namespace Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -21,7 +19,7 @@ namespace Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    Tags = table.Column<List<string>>(type: "text[]", nullable: false)
+                    Tags = table.Column<string[]>(type: "text[]", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -34,7 +32,7 @@ namespace Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
+                    Description = table.Column<string>(type: "text", nullable: false),
                     Tags = table.Column<List<string>>(type: "text[]", nullable: false)
                 },
                 constraints: table =>
@@ -58,50 +56,40 @@ namespace Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AuthorBooks",
+                name: "BookAuthor",
                 columns: table => new
                 {
-                    AuthorsId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BooksId = table.Column<Guid>(type: "uuid", nullable: false)
+                    BookId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AuthorId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AuthorBooks", x => new { x.AuthorsId, x.BooksId });
+                    table.PrimaryKey("PK_BookAuthor", x => new { x.BookId, x.AuthorId });
                     table.ForeignKey(
-                        name: "FK_AuthorBooks_Authors_AuthorsId",
-                        column: x => x.AuthorsId,
+                        name: "FK_BookAuthor_Authors_AuthorId",
+                        column: x => x.AuthorId,
                         principalTable: "Authors",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_AuthorBooks_Books_BooksId",
-                        column: x => x.BooksId,
+                        name: "FK_BookAuthor_Books_BookId",
+                        column: x => x.BookId,
                         principalTable: "Books",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.InsertData(
-                table: "Users",
-                columns: new[] { "Id", "CreatedAt", "Email", "Name" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2025, 8, 8, 19, 50, 14, 112, DateTimeKind.Utc).AddTicks(5391), "123", "Admin" },
-                    { 2, new DateTime(2025, 8, 8, 19, 50, 14, 112, DateTimeKind.Utc).AddTicks(5394), "asd", "User" },
-                    { 3, new DateTime(2025, 8, 8, 19, 50, 14, 112, DateTimeKind.Utc).AddTicks(5395), "qwe", "User" }
-                });
-
             migrationBuilder.CreateIndex(
-                name: "IX_AuthorBooks_BooksId",
-                table: "AuthorBooks",
-                column: "BooksId");
+                name: "IX_BookAuthor_AuthorId",
+                table: "BookAuthor",
+                column: "AuthorId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "AuthorBooks");
+                name: "BookAuthor");
 
             migrationBuilder.DropTable(
                 name: "Users");
