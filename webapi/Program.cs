@@ -13,7 +13,8 @@ builder.Services.AddScoped<IndexingService>();
 
 builder.Services
     .AddPersistence()
-    .AddOpenSearch();
+    .AddOpenSearch()
+    .AddRedis();
 
 builder.Services.AddCors(options =>
 {

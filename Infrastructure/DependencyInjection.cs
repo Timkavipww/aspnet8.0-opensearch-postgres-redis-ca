@@ -47,5 +47,16 @@ public static class DependencyInjection
 
         return services;
     }
+    public static IServiceCollection AddRedis(this IServiceCollection services)
+    {
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.InstanceName = "fullsearch_";
+            options.Configuration = "redis:6379";
+        });
+
+        return services;
+    }
+
     
 }
