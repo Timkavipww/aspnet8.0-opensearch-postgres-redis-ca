@@ -1,8 +1,11 @@
+using System.Text.Json;
+using Domain.Constants.Indicies;
 using Domain.Entities;
 using Domain.Entities.OpensearchModels;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using OpenSearch.Client;
 using webapi.Contracts;
 
@@ -15,12 +18,16 @@ public class BookController : ControllerBase
     private readonly ApplicationDbContext _context;
 
     private readonly IOpenSearchClient _opensearch;
+    IDistributedCache _redis;
 
     public BookController
     (
         ApplicationDbContext context,
-        IOpenSearchClient opensearch)
+        IOpenSearchClient opensearch,
+        IDistributedCache redis
+        )
     {
+        _redis = redis;
         _opensearch = opensearch;
         _context = context;
     }
@@ -29,29 +36,65 @@ public class BookController : ControllerBase
     /// Получить список книг с их авторами
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<BookDTO>>> GetBooks(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<BookDTO>>> GetBooks(CancellationToken cts)
     {
-        var books = await _context.Books
-            .Include(b => b.BookAuthors)
-                .ThenInclude(ba => ba.Author)
-            .Select(b => new BookDTO
+        var cachedBooks = await _redis.GetStringAsync($"{RedisIndicies.BOOK_REDIS_INDEX}S", cts);
+
+        if (cachedBooks is not null)
+        {
+            var serializedData = JsonSerializer.Deserialize<IEnumerable<BookDTO>>(cachedBooks);
+            if (serializedData is null)
+                throw new Exception($"Fail to serialize {nameof(Book)}");
+
+            var response = serializedData.Select(b => new BookDTO
             {
                 Id = b.Id,
                 Title = b.Title,
                 Description = b.Description,
-                Tags = b.Tags.ToList(),
-                Authors = b.BookAuthors
-                    .Select(ba => new AuthorDTO
-                    {
-                        Id = ba.Author.Id,
-                        Name = ba.Author.Name
-                    })
-                    .ToList()
-            })
-            .ToListAsync(cancellationToken);
+                Tags = b.Tags ?? new List<string>(),
+                Authors = b.Authors.Select(a => new AuthorDTO
+                {
+                    Id = a.Id,
+                    Name = a.Name
+                }).ToList() ?? new List<AuthorDTO>()
+            }).ToList();
 
-        return Ok(books);
-    }
+            return Ok(response);
+        }
+
+        var books = await _context.Books
+            .Include(b => b.BookAuthors)
+                .ThenInclude(ba => ba.Author)
+            .ToListAsync(cts);
+
+        if (books is null || !books.Any())
+            return NotFound($"{nameof(Book)} not found");
+
+        var booksDTO = books.Select(b => new BookDTO
+        {
+            Id = b.Id,
+            Title = b.Title,
+            Description = b.Description,
+            Tags = b.Tags?.ToList() ?? new List<string>(),
+            Authors = b.BookAuthors
+                .Select(ba => new AuthorDTO
+                {
+                    Id = ba.Author.Id,
+                    Name = ba.Author.Name
+                }).ToList()
+        }).ToList();
+
+        await _redis.SetStringAsync($"{RedisIndicies.BOOK_REDIS_INDEX}S",
+            JsonSerializer.Serialize(booksDTO),
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(15)
+            }, 
+            cts);
+
+        return Ok(booksDTO);
+        
+        }
 
     /// <summary>
     /// Получить список книг без авторов
@@ -172,7 +215,7 @@ public class BookController : ControllerBase
     {
 
         var response = await _opensearch.SearchAsync<BookSearchModel>(s => s
-            .Index("books_items") // индекс, в котором ищем
+            .Index("books_items")
             .Source(src => src.Includes(i => i
                 .Fields(f => f.Title, f => f.Tags, f => f.Description)
             ))

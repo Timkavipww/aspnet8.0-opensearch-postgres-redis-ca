@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY Domain/Domain.csproj ./domain/
+COPY ../Domain/Domain.csproj ./domain/
 COPY webapi/webapi.csproj ./webapi/
 COPY Infrastructure/Infrastructure.csproj ./Infrastructure/
 
